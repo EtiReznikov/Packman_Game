@@ -221,19 +221,6 @@ public class Game_Frame  extends JFrame implements MouseListener{
 		//panel adds "this" object as a MouseEvent listener.
 		_panel.addMouseListener(this);
 	}
-
-	protected void paintElement() {
-		_paper = _panel.getGraphics();
-		FruitCoponent draw_fruits= new FruitCoponent();
-		PackmanCoponent draw_packmen= new PackmanCoponent();
-		draw_fruits.paintComponent(_paper);
-		draw_packmen.paintComponent(_paper);
-
-		_paper.setFont(new Font("Monospaced", Font.PLAIN, 14));               
-		_paper.drawString("("+Integer.toString(x)+", "+Integer.toString(y)+")",x,y-10);
-
-	}
-
 	public void paint(Graphics g) {
 		g.drawImage(Map.img, 0, 0, getWidth(), getHeight(), this);
 		paintElement();
@@ -267,7 +254,125 @@ public class Game_Frame  extends JFrame implements MouseListener{
 
 		}
 	}
+	protected void paintElement() {
+		_paper = _panel.getGraphics();
+		FruitCoponent draw_fruits= new FruitCoponent();
+		PackmanCoponent draw_packmen= new PackmanCoponent();
+		draw_fruits.paintComponent(_paper);
+		draw_packmen.paintComponent(_paper);
 
+		_paper.setFont(new Font("Monospaced", Font.PLAIN, 14));               
+		_paper.drawString("("+Integer.toString(x)+", "+Integer.toString(y)+")",x,y-10);
+
+	}
+
+	/**
+	 * 
+	 */
+	public void threadGame() {
+
+		for (Path path: solution) {
+
+			Thread thread= new Thread() {
+				@Override
+				public void run() {
+
+					for (Metadata metadata: path)
+					{
+						double distance= mycoords.distance3d(path.getPackman().getPackmanLocation(), metadata.getPoint());
+						double time=(distance-path.getPackman().getRadius())/path.getPackman().getVelocity();
+					//	double time=(distance)/path.getPackman().getVelocity();
+						//	for (double i=0; i<time; i=i+1/time+0.01) {
+						Point3D vector= new Point3D(mycoords.vector3D(path.getPackman().getPackmanLocation(), metadata.getPoint()));
+						double norma= norma(vector, path.getPackman().getVelocity());
+						Point3D normalVector=new Point3D(vector.x()/norma, vector.y()/norma, vector.z()/norma);
+						game.packmen.indexOf(path.getPackman());
+						int i=0;
+						while (i<=time) {
+							normalVector.set_x(normalVector.x()*path.getPackman().getVelocity());
+							normalVector.set_y(normalVector.y()*path.getPackman().getVelocity());
+							normalVector.set_z(normalVector.z()*path.getPackman().getVelocity());
+							distance=mycoords.distance3d(path.getPackman().getPackmanLocation(), normalVector);
+							path.getPackman().getRadius();
+							path.getPackman().getVelocity();
+							path.getPackman().setPackmanLocation(mycoords.add(path.getPackman().getPackmanLocation(),normalVector));
+
+							path.getPackman().setLocationInPixle((int)(path.getPackman().getLocationInPixle().x()*path.getPackman().getVelocity()),(int)(path.getPackman().getLocationInPixle().y()*path.getPackman().getVelocity()));
+							repaint();
+							i=i+5;
+
+							try {
+								Thread.sleep(10*path.getPackman().getVelocity());
+							} catch (InterruptedException e1) {
+								e1.printStackTrace();
+							}
+						}
+						path.getPackman().setPackmanLocation(metadata.getPoint());
+						repaint();
+
+						try {
+							Thread.sleep(10*path.getPackman().getVelocity());
+						} catch (InterruptedException e1) {
+							e1.printStackTrace();
+						}
+
+						game.fruits.remove(metadata.getFruit());
+						repaint();
+
+					}
+				}
+				
+			};
+			thread.start();		
+			if (game.fruits.isEmpty())
+				repaint();
+		}
+
+	}
+	
+	/**
+	 * This function calculates the norma of the vector
+	 * @param vector the vector on which the calculation is made
+	 * @param velocity the velocity of the vector
+	 * @return
+	 */
+	private static double norma(Point3D vector, long velocity) {
+		return Math.sqrt(Math.pow(vector.x(), 2)+Math.pow(vector.y(), 2)+Math.pow(vector.z(), 2))*velocity;
+	}
+
+	@Override
+	public void mousePressed(MouseEvent event) {
+		x=event.getX();
+		y=event.getY();
+
+		Point3D tocoord= new Point3D(x,y);
+		if (GameStatus==1) {
+			tocoord=Map.PixeltoCoordanite(tocoord);
+			Packman p= new Packman(tocoord);
+			game.packmen.add(p);
+		}
+		else if (GameStatus==2) {
+			tocoord=Map.PixeltoCoordanite(tocoord);
+			Fruit f= new Fruit(tocoord);
+			game.fruits.add(f);
+		}
+		repaint();
+	}
+
+
+
+
+	// Not Used, but need to provide an empty body for compilation
+	public void mouseReleased(MouseEvent event){}
+	public void mouseClicked(MouseEvent event){}
+	public void mouseExited(MouseEvent event){}
+	public void mouseEntered(MouseEvent event){}
+	public static void main(String[] args) {
+		Game_Frame frame = new Game_Frame();
+		frame.setBounds(0, 0, frame.width, frame.height);
+		frame.createGui();
+		frame.setVisible(true);
+	}
 	/**
 	 * This class shows the Fruits on the map
 	 */
@@ -285,13 +390,13 @@ public class Game_Frame  extends JFrame implements MouseListener{
 						int x=(int)fruit.getLocationInPixle().x();
 						int y=(int)fruit.getLocationInPixle().y();
 						if (fruit.getId()%4==0)
-							_paper.drawImage(Map.Fruit1,(int)fruit.getLocationInPixle().x(),(int)fruit.getLocationInPixle().y(),25,25,  null);
+							_paper.drawImage(Map.Fruit1,x,y,25,25,  null);
 						if (fruit.getId()%4==1)
-							_paper.drawImage(Map.Fruit2,(int)fruit.getLocationInPixle().x(),(int)fruit.getLocationInPixle().y(),30,30,  null);
+							_paper.drawImage(Map.Fruit2,x,y,30,30,  null);
 						if (fruit.getId()%4==2)
-							_paper.drawImage(Map.Fruit3,(int)fruit.getLocationInPixle().x(),(int)fruit.getLocationInPixle().y(),25,25,  null);
+							_paper.drawImage(Map.Fruit3,x,y,25,25,  null);
 						if (fruit.getId()%4==3)
-							_paper.drawImage(Map.Fruit4,(int)fruit.getLocationInPixle().x(),(int)fruit.getLocationInPixle().y(),30,30,  null);
+							_paper.drawImage(Map.Fruit4,x,y,30,30,  null);
 					}
 				}
 			}
@@ -356,115 +461,6 @@ public class Game_Frame  extends JFrame implements MouseListener{
 			}
 
 		}
-	}
-	/**
-	 * This function calculates the norma of the vector
-	 * @param vector the vector on which the calculation is made
-	 * @param velocity the velocity of the vector
-	 * @return
-	 */
-	public static double norma(Point3D vector, long velocity) {
-		return Math.sqrt(Math.pow(vector.x(), 2)+Math.pow(vector.y(), 2)+Math.pow(vector.z(), 2))*velocity;
-	}
-
-	/**
-	 * 
-	 */
-	public void threadGame() {
-
-		for (Path path: solution) {
-
-			Thread thread= new Thread() {
-				@Override
-				public void run() {
-
-					for (Metadata metadata: path)
-					{
-						double distance= mycoords.distance3d(path.getPackman().getPackmanLocation(), metadata.getPoint());
-						double time=(distance-path.getPackman().getRadius())/path.getPackman().getVelocity();
-						//	for (double i=0; i<time; i=i+1/time+0.01) {
-						Point3D vector= new Point3D(mycoords.vector3D(path.getPackman().getPackmanLocation(), metadata.getPoint()));
-						double norma= norma(vector, path.getPackman().getVelocity());
-						Point3D normalVector=new Point3D(vector.x()/norma, vector.y()/norma, vector.z()/norma);
-						game.packmen.indexOf(path.getPackman());
-						int i=0;
-						while (i<time) {
-							normalVector.set_x(normalVector.x()*path.getPackman().getVelocity());
-							normalVector.set_y(normalVector.y()*path.getPackman().getVelocity());
-							normalVector.set_z(normalVector.z()*path.getPackman().getVelocity());
-							distance=mycoords.distance3d(path.getPackman().getPackmanLocation(), normalVector);
-							path.getPackman().getRadius();
-							path.getPackman().getVelocity();
-							path.getPackman().setPackmanLocation(mycoords.add(path.getPackman().getPackmanLocation(),normalVector));
-
-							path.getPackman().setLocationInPixle((int)(path.getPackman().getLocationInPixle().x()*path.getPackman().getVelocity()),(int)(path.getPackman().getLocationInPixle().y()*path.getPackman().getVelocity()));
-							repaint();
-							i=i+5;
-
-							try {
-								Thread.sleep(10*path.getPackman().getVelocity());
-							} catch (InterruptedException e1) {
-								e1.printStackTrace();
-							}
-						}
-
-						path.getPackman().setPackmanLocation(metadata.getPoint());
-						repaint();
-
-						try {
-							Thread.sleep(100);
-						} catch (InterruptedException e1) {
-							e1.printStackTrace();
-						}
-
-						game.fruits.remove(metadata.getFruit());
-						repaint();
-
-					}
-				}
-			};
-			thread.start();
-		}
-
-	}
-
-
-
-
-
-
-	@Override
-	public void mousePressed(MouseEvent event) {
-		x=event.getX();
-		y=event.getY();
-
-		Point3D tocoord= new Point3D(x,y);
-		if (GameStatus==1) {
-			tocoord=Map.PixeltoCoordanite(tocoord);
-			Packman p= new Packman(tocoord);
-			game.packmen.add(p);
-		}
-		else if (GameStatus==2) {
-			tocoord=Map.PixeltoCoordanite(tocoord);
-			Fruit f= new Fruit(tocoord);
-			game.fruits.add(f);
-		}
-		repaint();
-	}
-
-
-
-
-	// Not Used, but need to provide an empty body for compilation
-	public void mouseReleased(MouseEvent event){}
-	public void mouseClicked(MouseEvent event){}
-	public void mouseExited(MouseEvent event){}
-	public void mouseEntered(MouseEvent event){}
-	public static void main(String[] args) {
-		Game_Frame frame = new Game_Frame();
-		frame.setBounds(0, 0, frame.width, frame.height);
-		frame.createGui();
-		frame.setVisible(true);
 	}
 }
 

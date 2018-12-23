@@ -19,7 +19,6 @@ public class ShortestPathAlgo {
 	public ArrayList<Fruit> existing_fruits;
 	public ArrayList<Packman> packmen;
 	static MyCoords mycoords;
-
 	public ShortestPathAlgo(Game game){
 		this.game=game;
 		existing_fruits=new ArrayList<Fruit>(game.fruits);
